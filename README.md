@@ -8,7 +8,7 @@ This sample provides implementation of callback pattern for approval or confirma
 **cdk**- To create all the components of this sample using Amazon CDK toolkit.\
 **completeOrderFunction**- A lambda function to mark order as completed.\
 **processOrderFunction**- A lambda function to start processing of order.\
-**storeTaskTokenFunction**- A lambda function to store task token into Amazon S3.\
+**storeTaskTokenFunction**- A lambda function to store task token into Amazon S3.
 
 # Architecture
 This is the architecture that this sample implements.
@@ -25,7 +25,7 @@ This is the architecture that this sample implements.
 9. API lambda validate confirmation request.
 10. API lambda fetch task token from S3 for given request and sends task sucess to step functions.
 11. As it gets SendTaskSucess, it resumes the execution.
-12. API lambda sends acknowledgement response to the user. 
+12. API lambda sends acknowledgement response to the user.ï¿½
 13. Starts complete order task\
 \
 ***Note: AWS Batch, Fargate instance, Elastic Container Registry (ECR) are applicable if task in Step function task is taking more than 15 minutes and considering that task running into AWS Batch instead of lambda function.***
@@ -43,7 +43,32 @@ AWS Toolkit for Visual Studio\
 3. Open command prompt and run below commands\
     `cdk synth`\
     `cdk deploy`
-	
+
+## Testing
+
+After deployment, you will get API Gateway endpoint URL under outputs. You can use that URL to create the requests using Postman/Swagger or any other tool for REST APIs.
+
+1. Process Order Request:\
+Method: POST\
+URL: {Your API Gateway endpoint URL}/OrderRequest/ProcessOrder\
+Headers: x-api-key: {Take the same value that is passed in cdkstack.cs}\
+Body:
+    `{
+    "OrderId":"2d6bfae2-c279-41d5-b59e-280b22733f9d",
+    "OrderDetails":"order1"
+    }`
+2. Check the workflow execution in AWS Console, it must be Paused and waiting for confirmation.
+3. Confirm/Complete Order Request:\
+Method: POST\
+URL: {Your API Gateway endpoint URL}/OrderRequest/CompleteOrder\
+Headers: x-api-key: {Take the same value that is passed in cdkstack.cs}\
+Body:
+    `{
+    "OrderId":"2d6bfae2-c279-41d5-b59e-280b22733f9d",
+    "OrderDetails":"order1",
+    "IsConfirmed":true
+    }`
+
 ## Security
 
 See [CONTRIBUTING](CONTRIBUTING.md#security-issue-notifications) for more information.
