@@ -1,8 +1,18 @@
 ## Introduction
 In workflow based application execution, few steps require a pause and wait for the confirmation/approval from external sources, after getting confirmation it resumes or terminates the execution. To accomplish this, a callback pattern can be used where an AWS Step function pause during a task, and wait for an external process or command to return the task token, that was generated when the task started. 
 This sample provides implementation of callback pattern for approval or confirmation step from external API/service with the help of Amazon S3, and AWS Lambda functions.
+
+# Projects in solution
+**CallbackPatternSample.API**- API that trigger Step functions workflow execution and send confirmation request.\
+**CallbackPatternSample.Models**- Shared library used across the projects.\
+**cdk**- To create all the components of this sample using Amazon CDK toolkit.\
+**completeOrderFunction**- A lambda function to mark order as completed.\
+**processOrderFunction**- A lambda function to start processing of order.\
+**storeTaskTokenFunction**- A lambda function to store task token into Amazon S3.\
+
+# Architecture
 This is the architecture that this sample implements.
-![callback-pattern-sample-architecture](https://gitlab.aws.dev/umaskr/aws-step-functions-callback-patterns-sample/-/tree/main/blob/callback-pattern.png?raw=true)
+![callback-pattern-sample-architecture](https://github.com/aws-samples/aws-step-functions-callback-pattern-dotnet-sample/blob/main/blob/callback-pattern.png)
 
 1. User sends process order request.
 2. API Lambda function validate request.
