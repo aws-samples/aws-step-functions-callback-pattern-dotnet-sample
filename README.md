@@ -24,8 +24,8 @@ This is the architecture that this sample implements.
 8. User sends confirmation request to API.
 9. API lambda validate confirmation request.
 10. API lambda fetch task token from S3 for given request and sends task sucess to step functions.
-11. As it gets SendTaskSucess, it resumes the execution.
-12. API lambda sends acknowledgement response to the user.�
+11. As it gets `SendTaskSucess`, it resumes the execution.
+12. API lambda sends acknowledgement response to the user.
 13. Starts complete order task\
 \
 ***Note: AWS Batch, Fargate instance, Elastic Container Registry (ECR) are applicable if task in Step function task is taking more than 15 minutes and considering that task running into AWS Batch instead of lambda function.***
