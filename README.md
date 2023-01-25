@@ -41,6 +41,7 @@ AWS Toolkit for Visual Studio\
 2. Install aws-cdk [https://docs.aws.amazon.com/cdk/v2/guide/cli.html]
 3. Build the solution
 3. Open command prompt and run below commands\
+    `dotnet publish -c Release`
     `cdk synth`\
     `cdk deploy`
 
