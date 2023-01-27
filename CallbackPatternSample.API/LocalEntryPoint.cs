@@ -15,5 +15,8 @@ public class LocalEntryPoint
             .ConfigureWebHostDefaults(webBuilder =>
             {
                 webBuilder.UseStartup<Startup>();
+            })
+            .ConfigureAppConfiguration((hostContext, config) => {
+                config.AddEnvironmentVariables();
             });
 }

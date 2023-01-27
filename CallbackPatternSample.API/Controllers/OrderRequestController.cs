@@ -4,6 +4,7 @@ using Amazon.StepFunctions;
 using Amazon.StepFunctions.Model;
 using CallbackPatternSample.Models;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Options;
 using System.Net;
 
 namespace CallbackPatternSample.API.Controllers;
@@ -12,88 +13,88 @@ namespace CallbackPatternSample.API.Controllers;
 [ApiController]
 public class OrderRequestController : ControllerBase
 {
-#pragma warning disable CS8601 // Possible null reference assignment.
-    private readonly string OrderStateMachineArn = Environment.GetEnvironmentVariable("OrdersStateMachine");
-#pragma warning restore CS8601 // Possible null reference assignment.
+    ILogger<OrderRequestController> logger;
+    IAmazonS3 s3Client;
+    IAmazonStepFunctions stepFunctionsClient;
+    IOptions<OrderOptions> options;
 
-    [HttpPost("OrderStatus/{OrderId}")]
-    public async Task<IActionResult> GetOrderStatus(Guid OrderId)
+    public OrderRequestController(ILogger<OrderRequestController> logger,
+        IAmazonS3 s3Client,
+        IAmazonStepFunctions stepFunctionsClient,
+        IOptions<OrderOptions> options)
     {
-        await Task.Delay(100);
+        this.logger = logger;
+        this.s3Client = s3Client;
+        this.stepFunctionsClient = stepFunctionsClient;
+        this.options = options;
+    }
+    
+    [HttpPost("[action]/{OrderId}")]
+    public async Task<IActionResult> OrderStatus(Guid OrderId)
+    {
+        await Task.Yield();
         return Ok();
     }
 
-    [HttpPost("ProcessOrder")]
-    public async Task<IActionResult> ProcessOrder([FromBody] Order order)
+    [HttpPost("[action]")]
+    public async Task<IActionResult> ProcessOrder([FromBody] Order order, CancellationToken cancellationToken)
     {
-        using (var amazonStepFunctionsClient = new AmazonStepFunctionsClient())
+        // start the execution
+        var startExecutionRequest = new StartExecutionRequest
         {
-            // start the execution
-            var startExecutionRequest = new StartExecutionRequest
-            {
-                Input = System.Text.Json.JsonSerializer.Serialize(order),
-                StateMachineArn = OrderStateMachineArn,
-                Name = order.OrderId.ToString()+Guid.NewGuid().ToString()
-            };
+            Input = System.Text.Json.JsonSerializer.Serialize(order),
+            StateMachineArn = options.Value.OrdersStateMachine,
+            Name = order.OrderId.ToString() + Guid.NewGuid().ToString()
+        };
 
-            await amazonStepFunctionsClient.StartExecutionAsync(startExecutionRequest);
-        }
-        return new ObjectResult("Order request received and processing strated...") { StatusCode = (int)HttpStatusCode.OK };
+        await stepFunctionsClient.StartExecutionAsync(startExecutionRequest, cancellationToken);
+        return Ok("Order request received and processing started...");
     }
 
-    [HttpPost("CompleteOrder")]
-    public async Task<IActionResult> CompleteOrder([FromBody] Order order)
+    [HttpPost("[action]")]
+    public async Task<IActionResult> CompleteOrder([FromBody] Order order, CancellationToken cancellationToken)
     {
-        string? token = await GetTaskToken(order.OrderId);
+        string? token = await GetTaskToken(order.OrderId, cancellationToken);
         if (!string.IsNullOrEmpty(token))
         {
-            using (var amazonStepFunctionsClient = new AmazonStepFunctionsClient())
+            if (order.IsConfirmed)
             {
-                if (order.IsConfirmed)
+                var response = await stepFunctionsClient.SendTaskSuccessAsync(new SendTaskSuccessRequest()
                 {
-                    var response = await amazonStepFunctionsClient.SendTaskSuccessAsync(new SendTaskSuccessRequest()
-                    {
-                        Output = System.Text.Json.JsonSerializer.Serialize(order),
-                        TaskToken = token
-                    });
-                    if (response.HttpStatusCode == HttpStatusCode.OK)
-                        return new ObjectResult("Order Confirmed.") { StatusCode = (int)HttpStatusCode.OK };
-                }
-                else
+                    Output = System.Text.Json.JsonSerializer.Serialize(order),
+                    TaskToken = token
+                }, cancellationToken);
+                if (response.HttpStatusCode == HttpStatusCode.OK)
+                    return Ok("Order Confirmed.");
+            }
+            else
+            {
+                var response = await stepFunctionsClient.SendTaskFailureAsync(new SendTaskFailureRequest()
                 {
-                    var response = await amazonStepFunctionsClient.SendTaskFailureAsync(new SendTaskFailureRequest()
-                    {
-                        Cause = "Cancelled from client...",
-                        TaskToken = token
-                    });
-                    if (response.HttpStatusCode == HttpStatusCode.OK)
-                        return new ObjectResult("Order not confirmed..") { StatusCode = (int)HttpStatusCode.OK };
-                }
+                    Cause = "Cancelled from client...",
+                    TaskToken = token
+                }, cancellationToken);
+                if (response.HttpStatusCode == HttpStatusCode.OK)
+                    return Ok("Order not confirmed..");
             }
         }
 
-        return new ObjectResult("Order not confirmed, contact support.") { StatusCode = (int)HttpStatusCode.InternalServerError };
-    }    
-
-    public static async Task<string> GetTaskToken(Guid orderId)
-    {
-        Console.WriteLine("Getting token for : "+ orderId.ToString());
-        string? token = null;
-        using (var s3Client = new AmazonS3Client())
-        {
-            GetObjectRequest request = new GetObjectRequest();
-            request.BucketName =Environment.GetEnvironmentVariable("TokenStoreBucket");
-            request.Key = orderId.ToString();
-            var response = await s3Client.GetObjectAsync(request);
-            using (StreamReader reader = new StreamReader(response.ResponseStream))
-            {
-                token = reader.ReadToEnd();
-            }
-        }
-        Console.WriteLine("token: " + token);
-        return token;
+        return Problem("Order not confirmed, contact support.");
     }
 
-
-
+    private async Task<string> GetTaskToken(Guid orderId, CancellationToken cancellationToken)
+    {
+        logger.LogInformation("Getting token for : " + orderId.ToString());
+        string? token = null;
+        GetObjectRequest request = new GetObjectRequest();
+        request.BucketName = options.Value.TokenStoreBucket; //Environment.GetEnvironmentVariable("TokenStoreBucket");
+        request.Key = orderId.ToString();
+        var response = await s3Client.GetObjectAsync(request, cancellationToken);
+        using (StreamReader reader = new StreamReader(response.ResponseStream))
+        {
+            token = await reader.ReadToEndAsync();
+        }
+        logger.LogInformation("Token received... ");
+        return token;
+    }
 }

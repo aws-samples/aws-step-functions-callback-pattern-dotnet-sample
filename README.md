@@ -41,7 +41,7 @@ AWS Toolkit for Visual Studio\
 2. Install aws-cdk [https://docs.aws.amazon.com/cdk/v2/guide/cli.html]
 3. Build the solution
 3. Open command prompt and run below commands\
-    `dotnet publish -c Release`
+    `dotnet publish -c Release`\
     `cdk synth`\
     `cdk deploy`
 
@@ -52,7 +52,7 @@ After deployment, you will get API Gateway endpoint URL under outputs. You can u
 1. Process Order Request:\
 Method: POST\
 URL: {Your API Gateway endpoint URL}/OrderRequest/ProcessOrder\
-Headers: x-api-key: {Take the same value that is passed in cdkstack.cs}\
+Headers: x-api-key: {Take the same value that is passed in cdkstack.cs file under cdk project in solution}\
 Body:
     `{
     "OrderId":"2d6bfae2-c279-41d5-b59e-280b22733f9d",
@@ -62,7 +62,7 @@ Body:
 3. Confirm/Complete Order Request:\
 Method: POST\
 URL: {Your API Gateway endpoint URL}/OrderRequest/CompleteOrder\
-Headers: x-api-key: {Take the same value that is passed in cdkstack.cs}\
+Headers: x-api-key: {Take the same value that is passed in cdkstack.cs file under cdk project in solution}\
 Body:
     `{
     "OrderId":"2d6bfae2-c279-41d5-b59e-280b22733f9d",
