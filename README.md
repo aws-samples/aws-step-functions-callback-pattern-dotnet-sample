@@ -28,7 +28,7 @@ This is the architecture that this sample implements.
 12. API lambda sends acknowledgement response to the user.
 13. Starts complete order task\
 \
-***Note: AWS Batch, Fargate instance, Elastic Container Registry (ECR) are applicable if task in Step function task is taking more than 15 minutes and considering that task running into AWS Batch instead of lambda function.***
+***Note: To store task token you can use any kind of storage as Amazon S3/ DynamoDB or Any database, based on your scenario and cost considerations. You can use ECS Task (with Fargate) if task in Step function is taking more than 15 minutes as lambda function has 15 minutes per execution time limit.***
 
 ## Pre-requisites:
 Visual Studio\
